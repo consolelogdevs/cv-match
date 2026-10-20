@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CV Match · free CV keyword checker</title>
+<meta name="description" content="Free tool from console log devs. Paste your CV and a job ad to see which skills from the ad are missing in your CV. Runs in your browser, nothing is uploaded.">
+<meta property="og:title" content="CV Match · free CV keyword checker">
+<meta property="og:description" content="See which skills from a job ad are missing in your CV. Runs in your browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%23E8603C'/%3E%3Ccircle cx='32' cy='29' r='13' fill='%23F7C842'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+/* Layout: one column, two paste boxes, then a result card with missing skills first */
+:root{
+  --bg:#F2F4F9; --card:#FFFFFF; --ink:#0D2657; --muted:#5A6A8C; --line:#DDE3EF; --soft:#E8ECF5;
+  --accent:#E8603C; --accent-ink:#FFFFFF; --mark:#F2D94E;
+  --miss:#C9372C; --miss-bg:#FDECEA; --ok:#1E8A5A; --ok-bg:#E3F3EA;
+  --display:'Bricolage Grotesque',ui-sans-serif,system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0A1B40; --card:#102A5C; --ink:#F2F5FC; --muted:#A9B7D6; --line:#1E3C7A; --soft:#0D2350;
+  --accent:#F07150; --miss:#FF8A7F; --miss-bg:#3A1E2A; --ok:#5FD39D; --ok-bg:#163B37; color-scheme:dark}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.brand{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.brand b{color:var(--accent)}
+h1{font-size:clamp(40px,9vw,58px);line-height:.98;letter-spacing:-.03em;margin:6px 0 10px;font-weight:800}
+h1 em{font-style:normal;background:linear-gradient(transparent 58%,var(--mark) 58%);padding:0 .08em}
+.lede{color:var(--muted);margin:0;max-width:56ch}
+.boxes{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label{display:flex;flex-direction:column;gap:8px;font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);min-width:0}
+textarea{font:400 15px/1.45 var(--display);color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;min-height:220px;resize:vertical;width:100%}
+textarea:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{font:700 16px var(--display);border-radius:12px;padding:12px 18px;border:1px solid var(--line);background:var(--soft);color:var(--ink);cursor:pointer}
+.btn.go{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.ex{font:400 13px var(--mono);color:var(--muted)}
+.res{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:18px}
+.score{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.score b{font-size:44px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.score span{color:var(--muted)}
+.meter{margin-top:12px;height:12px;border-radius:6px;background:var(--soft);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--ok);border-radius:6px;transition:width .3s}
+h2{font-size:18px;margin:0 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 12px;font-weight:700;font-size:15px;border:1.5px solid transparent}
+.chip.m{background:var(--miss-bg);color:var(--miss);border-color:var(--miss)}
+.chip.f{background:var(--ok-bg);color:var(--ok);border-color:var(--ok)}
+.chip.o{background:var(--soft);color:var(--ink)}
+.chip small{font:700 11px var(--mono);opacity:.8}
+.empty{color:var(--muted);font-size:15px}
+.tip{border-left:3px solid var(--mark);padding:2px 0 2px 12px;color:var(--muted);font-size:15px}
+.foot{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:6px}
+.foot a{color:var(--accent);font-weight:700}
+@media (max-width:560px){.boxes{grid-template-columns:1fr}textarea{min-height:170px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <div class="brand">from <b>console log devs</b></div>
+    <h1>CV <em>Match</em></h1>
+    <p class="lede">Paste your CV and a job ad. See which skills from the ad are missing in your CV. Everything runs in your browser and nothing is uploaded.</p>
+  </div>
+
+  <div class="boxes">
+    <label for="cv">Your CV<textarea id="cv" spellcheck="false"></textarea></label>
+    <label for="ad">Job ad<textarea id="ad" spellcheck="false"></textarea></label>
+  </div>
+  <div class="row">
+    <button class="btn go" id="go" type="button">Compare</button>
+    <button class="btn" id="clear" type="button">Clear both</button>
+    <span class="ex" id="exnote">Example CV and job ad loaded. Paste your own.</span>
+  </div>
+
+  <div class="res" id="res" aria-live="polite">
+    <div>
+      <div class="score"><b id="sc">0 of 0</b><span>skills from the ad found in your CV</span></div>
+      <div class="meter"><i id="bar" style="width:0"></i></div>
+    </div>
+    <div><h2>Missing in your CV</h2><div class="chips" id="miss"></div></div>
+    <div><h2>Already in your CV</h2><div class="chips" id="found"></div></div>
+    <div><h2>Other words the ad repeats</h2><div class="chips" id="other"></div></div>
+    <div class="tip">Only add skills you really have. Use the exact words from the ad, for example "TypeScript" instead of "TS".</div>
+  </div>
+
+  <div class="foot">
+    <span>The skill list covers common tech, design, data, marketing and business skills. The numbers next to a skill show how often the ad mentions it.</span>
+    <span>Found this useful? <a href="https://www.instagram.com/console.log.devs/" target="_blank" rel="noopener">Follow console log devs on Instagram</a>.</span>
+  </div>
+</div>
+
+<script>
+const SKILLS={
+ 'JavaScript':['javascript','js','es6'],'TypeScript':['typescript','ts'],'React':['react','reactjs','react.js'],'Next.js':['next.js','nextjs'],
+ 'Vue':['vue','vue.js','vuejs'],'Angular':['angular'],'Svelte':['svelte'],'Node.js':['node.js','nodejs','node'],'Express':['express.js','expressjs'],
+ 'HTML':['html','html5'],'CSS':['css','css3'],'Sass':['sass','scss'],'Tailwind':['tailwind','tailwindcss'],'Redux':['redux'],
+ 'React Native':['react native'],'Flutter':['flutter'],'iOS':['ios'],'Android':['android'],'Swift':['swift'],'Kotlin':['kotlin'],
+ 'Python':['python'],'Django':['django'],'Flask':['flask'],'FastAPI':['fastapi'],'Java':['java'],'Spring':['spring','spring boot'],
+ 'C#':['c#'],'.NET':['.net','dotnet'],'C++':['c++'],'Go':['golang'],'Rust':['rust'],'PHP':['php'],'Laravel':['laravel'],'Ruby':['ruby'],'Rails':['rails','ruby on rails'],
+ 'SQL':['sql'],'PostgreSQL':['postgresql','postgres'],'MySQL':['mysql'],'MongoDB':['mongodb','mongo'],'Redis':['redis'],'GraphQL':['graphql'],
+ 'REST APIs':['rest api','rest apis','restful'],'Microservices':['microservices','microservice'],'System design':['system design'],
+ 'Git':['git'],'GitHub':['github'],'CI/CD':['ci/cd','ci cd','continuous integration','continuous delivery'],'Docker':['docker'],'Kubernetes':['kubernetes','k8s'],
+ 'AWS':['aws','amazon web services'],'Azure':['azure'],'Google Cloud':['gcp','google cloud'],'Terraform':['terraform'],'Linux':['linux'],
+ 'Testing':['testing','tests','test automation','automated tests'],'Unit testing':['unit testing','unit tests'],'Jest':['jest'],'Cypress':['cypress'],'Playwright':['playwright'],'TDD':['tdd','test-driven'],
+ 'Webpack':['webpack'],'Vite':['vite'],'Performance optimization':['performance optimization','web performance'],'Accessibility':['accessibility','a11y','wcag'],
+ 'Responsive design':['responsive design','responsive'],'Security':['security'],'OAuth':['oauth'],
+ 'Figma':['figma'],'Sketch':['sketch'],'Adobe XD':['adobe xd'],'Photoshop':['photoshop'],'Illustrator':['illustrator'],'UX':['ux','user experience'],'UI':['ui','user interface'],
+ 'User research':['user research'],'Prototyping':['prototyping','prototypes'],'Design systems':['design system','design systems'],
+ 'Excel':['excel'],'Power BI':['power bi'],'Tableau':['tableau'],'Data analysis':['data analysis','data analytics'],'Pandas':['pandas'],'NumPy':['numpy'],
+ 'Machine learning':['machine learning','ml'],'TensorFlow':['tensorflow'],'PyTorch':['pytorch'],'LLMs':['llm','llms','large language models'],'Statistics':['statistics'],
+ 'Agile':['agile'],'Scrum':['scrum'],'Kanban':['kanban'],'Jira':['jira'],'Confluence':['confluence'],
+ 'Project management':['project management'],'Product management':['product management'],'Stakeholder management':['stakeholder management','stakeholders'],
+ 'Communication':['communication'],'Leadership':['leadership'],'Mentoring':['mentoring','mentor'],'Problem solving':['problem solving','problem-solving'],'Teamwork':['teamwork','collaboration'],
+ 'SEO':['seo'],'Google Analytics':['google analytics'],'Content marketing':['content marketing'],'Social media':['social media'],'Copywriting':['copywriting'],'Email marketing':['email marketing'],
+ 'Salesforce':['salesforce'],'HubSpot':['hubspot'],'SAP':['sap'],'CRM':['crm'],'Sales':['sales'],'Negotiation':['negotiation'],'Customer service':['customer service','customer support'],
+ 'Budgeting':['budgeting','budget'],'Forecasting':['forecasting'],'Financial modeling':['financial modeling','financial modelling'],'Accounting':['accounting'],'Recruiting':['recruiting','recruitment']
+};
+const STOP=new Set('a an and are as at be by for from has have in is it its of on or our that the to we will with you your their they this who what when where which while within years year experience team work working role skills skill strong good great ability able plus etc using use used across new join help build building including like more about also can must should well other into per such than then there these those our us all any both each few most some very just over under between including want looking job company we’re we\'re you’ll you\'ll'.split(' '));
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function norm(t){return ' '+t.toLowerCase().replace(/[’']/g,"'").replace(/[^a-z0-9+#./\- ]+/g,' ').replace(/\s+/g,' ')+' '}
+function count(text,alias){
+  const a=alias.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const re=new RegExp('(?:^|[^a-z0-9+#])'+a+'(?=[^a-z0-9+#]|$)','g');
+  const m=text.match(re); return m?m.length:0;
+}
+function compare(){
+  const cv=norm($('cv').value), ad=norm($('ad').value);
+  const found=[],miss=[];
+  for(const [name,al] of Object.entries(SKILLS)){
+    const n=al.reduce((s,a)=>s+count(ad,a),0); if(!n)continue;
+    (al.some(a=>count(cv,a)>0)?found:miss).push([name,n]);
+  }
+  // "React Native" in the ad should not also count as plain "React" twice; keep both, it is still a valid keyword
+  miss.sort((a,b)=>b[1]-a[1]); found.sort((a,b)=>b[1]-a[1]);
+  const total=found.length+miss.length;
+  $('sc').textContent=`${found.length} of ${total}`;
+  $('bar').style.width=total?(found.length/total*100)+'%':'0';
+  const chip=(c,[n,k])=>`<span class="chip ${c}">${c==='f'?'✓ ':''}${esc(n)}${k>1?` <small>×${k}</small>`:''}</span>`;
+  $('miss').innerHTML=miss.length?miss.map(x=>chip('m',x)).join(''):'<span class="empty">Nothing missing from our skill list. Nice.</span>';
+  $('found').innerHTML=found.length?found.map(x=>chip('f',x)).join(''):'<span class="empty">No matching skills yet.</span>';
+  // repeated words in the ad that the CV never mentions
+  const known=new Set(Object.values(SKILLS).flat().flatMap(x=>[x,...x.split(' ')]));
+  const words=ad.split(' ').map(w=>w.replace(/^[^a-z0-9+#]+|[^a-z0-9+#]+$/g,'')).filter(w=>w.length>3&&!STOP.has(w)&&!known.has(w)&&!/^\d+$/.test(w));
+  const freq={}; words.forEach(w=>freq[w]=(freq[w]||0)+1);
+  const other=Object.entries(freq).filter(([w,n])=>n>=2&&count(cv,w)===0).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  $('other').innerHTML=other.length?other.map(([w,n])=>`<span class="chip o">${esc(w)} <small>×${n}</small></span>`).join(''):'<span class="empty">No other repeated words.</span>';
+}
+const EX_CV=`Alex Morgan, Frontend Developer (example)
+3 years building websites and dashboards with JavaScript, HTML and CSS.
+Worked with REST APIs and Git in a small product team.
+Built a booking app used by 2,000 customers.`;
+const EX_AD=`Frontend Developer at Northwind (example)
+We are looking for a Frontend Developer with strong React and TypeScript skills.
+You will build React components, write tests and work with REST APIs.
+Experience with TypeScript, testing (Jest) and Git is required.
+You'll work in an Agile team with designers in Figma and help with project management of small features.
+Nice to have: React Native, accessibility, Agile ceremonies, project management tools like Jira.`;
+$('cv').value=EX_CV; $('ad').value=EX_AD;
+let t; ['cv','ad'].forEach(id=>$(id).addEventListener('input',()=>{$('exnote').hidden=true;clearTimeout(t);t=setTimeout(compare,250)}));
+$('go').addEventListener('click',compare);
+$('clear').addEventListener('click',()=>{$('cv').value='';$('ad').value='';$('exnote').hidden=true;compare();$('cv').focus()});
+compare();
+</script>
+</body>
+</html>
